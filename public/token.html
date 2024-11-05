@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Handle Token</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      background-color: #f4f4f4;
+    }
+  </style>
+</head>
+<body>
+  <script>
+    window.onload = function() {
+      if (window.location.hash) {
+        const fragment = window.location.hash.substring(1);
+        const params = new URLSearchParams(fragment);
+        const accessToken = params.get('access_token');
+
+        if (accessToken) {
+          // Send the access token to the server
+          fetch('https://3002.code-amaan.w3d.run/oauth/whatsapp/callback', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ access_token: accessToken })
+          })
+          .then(response => response.json())
+          .then(data => {
+            console.log('Server response:', data);
+          })
+          .catch(error => {
+            console.error('Error sending Access Token:', error);
+          });
+        }
+      }
+    };
+  </script>
+</body>
+</html>
