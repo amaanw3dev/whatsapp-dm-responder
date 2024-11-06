@@ -23,7 +23,7 @@ app.get('/token', (req, res) => {
 });
 
 app.get('/oauth/whatsapp/connect', (req, res) => {
-    res.redirect(`https://www.facebook.com/v21.0/dialog/oauth?client_id=${clientId}&display=popup&redirect_uri=${redirectUrl}&response_type=token&scope=whatsapp_business_management,whatsapp_business_messaging`)
+    res.redirect(`https://www.facebook.com/v21.0/dialog/oauth?client_id=${clientId}&display=popup&redirect_uri=${redirectUrl}&response_type=token&scope=whatsapp_business_management,whatsapp_business_messaging,business_management`)
 })
 
 app.post('/oauth/whatsapp/callback', (req, res)=>{

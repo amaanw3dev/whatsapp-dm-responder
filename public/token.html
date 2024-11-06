@@ -26,18 +26,24 @@
         const accessToken = params.get('access_token');
 
         if (accessToken) {
-          // Send the access token to the server
           fetch('https://3002.code-amaan.w3d.run/oauth/whatsapp/callback', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ access_token: accessToken })
           })
-          .then(response => response.json())
-          .then(data => {
-            console.log('Server response:', data);
+          .then(response => {
+            if(response.ok){
+              if (window.opener) {
+                window.opener.postMessage({ type: "whatsappOAuth", data: {success: true} }, "*")
+              }
+              window.close()
+            }
+            else{
+              res.status(400).json("Unauthenticated")
+            }
           })
           .catch(error => {
-            console.error('Error sending Access Token:', error);
+            res.status(400).json(`Error sending access token : ${error?.message}`)
           });
         }
       }
