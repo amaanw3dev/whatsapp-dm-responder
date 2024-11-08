@@ -1,12 +1,13 @@
 require('dotenv').config();
 const express = require('express');
 const { getPhoneNumbers, sendMessage } = require('./utils');
+const { createUser, findUserById, updateAccessToken } = require('./db/queries');
 
 const app = express();
 
 const port = process.env.PORT
 const clientId = process.env.CLIENT_ID
-const redirectUrl = process.env.REDIRECT_URL
+let redirectUrl = process.env.REDIRECT_URL
 let phoneNumberId = null;
 let accessToken = null;
 
@@ -22,18 +23,89 @@ app.get('/token', (req, res) => {
     res.sendFile(__dirname + '/public/token.html');
 });
 
+app.get('/whatsapp/get-businesses', async (req, res) => {
+    const accessToken = req.query.access_token;
+    if (!accessToken) {
+      return res.status(400).json({ error: 'Access token is required' });
+    }
+  
+    try {
+      const response = await fetch(`https://graph.facebook.com/v17.0/me/businesses?access_token=${accessToken}`);
+      const data = await response.json();
+  
+      if (response.ok) {
+        res.status(200).json(data);
+      } else {
+        res.status(response.status).json(data);
+      }
+    } catch (error) {
+      res.status(500).json({ error: `Failed to fetch businesses: ${error.message}` });
+    }
+});
+
+app.get('/whatsapp/get-whatsapp-businesses', async (req, res) => {
+    const accessToken = req.query.access_token;
+    const selectedAccountId = req.query.selected_account;
+    if (!accessToken) {
+      return res.status(400).json({ error: 'Access token is required' });
+    }
+  
+    try {
+      const response = await fetch(`https://graph.facebook.com/v17.0/${selectedAccountId}/owned_whatsapp_business_accounts?access_token=${accessToken}`);
+      const data = await response.json();
+  
+      if (response.ok) {
+        res.status(200).json(data);
+      } else {
+        res.status(response.status).json(data);
+      }
+    } catch (error) {
+      res.status(500).json({ error: `Failed to fetch businesses: ${error.message}` });
+    }
+});
+
+let currentUserId = null
+let currentUserEmail = null
+
 app.get('/oauth/whatsapp/connect', (req, res) => {
+    const { user_id, user_email } = req.query
+    currentUserId = user_id
+    currentUserEmail = user_email
     res.redirect(`https://www.facebook.com/v21.0/dialog/oauth?client_id=${clientId}&display=popup&redirect_uri=${redirectUrl}&response_type=token&scope=whatsapp_business_management,whatsapp_business_messaging,business_management`)
 })
 
-app.post('/oauth/whatsapp/callback', (req, res)=>{
+app.post('/store-user', async (req, res)=>{
     const accessTokenFromBody = req.body.access_token;
     if (accessTokenFromBody) {
         accessToken = accessTokenFromBody;
         console.log('Access Token:', accessToken);
-        res.status(200).json({ message: 'Access Token received successfully' });
+        const existingUser = await findUserById(currentUserId)
+        console.log("EXISTING USER : ", existingUser)
+        if(!existingUser[0]){
+            const storedUser = await createUser({
+                id: currentUserId,
+                email: currentUserEmail,
+                accessToken
+            })
+            res.status(201).json({userId: currentUserId, message : `User stored successfully`});
+        }
+        else{
+            await updateAccessToken(existingUser[0].id, accessToken)
+            res.status(200).json({userId: existingUser[0].id, message : `Updated access token`})
+        }
     } else {
         res.status(400).json({ error: 'Access Token not found' });
+    }
+})
+
+app.get('/get-user', async (req, res) => {
+    const { user_id } = req.query
+    try {
+        const userData = await findUserById(user_id)
+        res.status(200).json(userData[0])
+    } catch (error) {
+        console.log("error while getting user : ", error?.message)
+        res.status(500).json("Internal Server Error")
     }
 })
 
@@ -66,9 +138,10 @@ app.post('/whatsapp/webhook', async (req, res) => {
     res.status(200).send("Message from Whatsapp DM responder")
 })
 
-app.get('/get-phone-numbers', async (req, res) => {
-    const phoneNumbers = await getPhoneNumbers('111576291812699')
-    res.status(200).json({phoneNumbers})
+app.get('/whatsapp/get-phone-numbers', async (req, res) => {
+    const {selected_whatsapp_account, access_token} = req.query
+    const phoneNumbers = await getPhoneNumbers(selected_whatsapp_account, access_token)
+    res.status(200).json(phoneNumbers)
 })
 
 app.listen(port, () => {

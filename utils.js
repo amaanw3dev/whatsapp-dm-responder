@@ -1,7 +1,6 @@
 const axios = require('axios');
 
-const getPhoneNumbers = async (wabaId) => {
-  const accessToken = process.env.ACCESS_TOKEN
+const getPhoneNumbers = async (wabaId, accessToken) => {
     try {
       const response = await axios.get(`https://graph.facebook.com/v16.0/${wabaId}/phone_numbers`, {
         headers: {
@@ -9,7 +8,7 @@ const getPhoneNumbers = async (wabaId) => {
         }
       });
   
-      return response.data.data
+      return response.data
     } catch (error) {
       console.error('Error fetching phone numbers:', error.response ? error.response.data : error.message);
     }

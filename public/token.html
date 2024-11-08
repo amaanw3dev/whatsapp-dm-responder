@@ -15,6 +15,11 @@
       margin: 0;
       background-color: #f4f4f4;
     }
+    .display-business {
+      display: flex;
+      flex-direction: column;
+      text-align: left;
+    }
   </style>
 </head>
 <body>
@@ -26,24 +31,26 @@
         const accessToken = params.get('access_token');
 
         if (accessToken) {
-          fetch('https://3002.code-amaan.w3d.run/oauth/whatsapp/callback', {
+          fetch('https://3002.code-amaan.w3d.run/store-user', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ access_token: accessToken })
           })
           .then(response => {
-            if(response.ok){
-              if (window.opener) {
-                window.opener.postMessage({ type: "whatsappOAuth", data: {success: true} }, "*")
-              }
-              window.close()
-            }
-            else{
-              res.status(400).json("Unauthenticated")
-            }
+            window.location.href = `https://4000.code-amaan.w3d.run/whatsapp/choose-business`
           })
+          // .then(data => {
+          //   if (window.opener) {
+          //     window.opener.postMessage({
+          //       type: "whatsappOAuth",
+          //       status: "success",
+          //       data: data
+          //     }, "*");
+          //   }
+          //   window.close();
+          // })
           .catch(error => {
-            res.status(400).json(`Error sending access token : ${error?.message}`)
+            res.status(400).json(`Error storing User : ${error?.message}`)
           });
         }
       }
